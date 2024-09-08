@@ -1,6 +1,10 @@
 'use client'
 
-import {Box, Link, Typography, Button, Stack} from "@mui/material"
+import { 
+  Box, Link, Typography, Button, Grid, 
+  IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText,
+  CircularProgress, Divider 
+} from '@mui/material';
 import questions from '../editor/questions.json';
 
 import HomeIcon from '@mui/icons-material/Home';
@@ -9,10 +13,11 @@ import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import BoltIcon from '@mui/icons-material/Bolt';
 import Person4Icon from '@mui/icons-material/Person4';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { CircularProgress } from "@mui/material";
+import MenuIcon from '@mui/icons-material/Menu';
+import AddIcon from '@mui/icons-material/Add'; 
 
-import {auth, db} from '../firebase';
-import {collection, query, where, getDocs} from 'firebase/firestore';
+import { auth, db } from '../firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import useLogout from '../components/logout';
@@ -21,591 +26,280 @@ import MoodIcon from '@mui/icons-material/Mood';
 import SentimentSatisfiedIcon from '@mui/icons-material/SentimentSatisfied';
 import MoodBadIcon from '@mui/icons-material/MoodBad';
 
-const col6 = ['#3D405B']; // Dark shade
-const col2 = ['#E07A5F']; // red
-const col3 = ['#81B29A']; // green
-const col4 = ['#F4F1DE']; // white
-const col5 = ['#F2CC8F']; // yellow
-const col1 = ['#191c35']; // Darker shade
+const col6 = '#3D405B';
+const col2 = '#E07A5F';
+const col3 = '#81B29A';
+const col4 = '#F4F1DE';
+const col5 = '#F2CC8F';
+const col1 = '#191c35';
 
-export default function Home(){
+export default function Home() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
+  const [name, setName] = useState('');
+  const [chats, setChats] = useState([]);
+  const [cards, setCards] = useState([]);
+  const handleLogout = useLogout();
+  const [yourScore, setYourScore] = useState('');
+  const [highestScore, setHighestScore] = useState('');
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-    // Redirect section
-    const router = useRouter(); 
-    const [isLoading, setIsLoading] = useState(true);
-    const [authError, setAuthError] = useState(null);
-    const [name, setName] = useState('');
-    const [chats, setChats] = useState([]);
-    const [cards, setCards] = useState([]);
-    const handleLogout = useLogout();
-    const [yourScore, setYourScore] = useState('');
-    const [highestScore, setHighestScore] = useState('');
-    
-    
-    const getMaxScore = async() => {
-        try {
-            const userRef = collection(db, "users");
-            
-            
-            const querySnapshot = await getDocs(userRef);
-            
-            if (!querySnapshot.empty) {
-              let maxScore = 0;
-              
-              
-              querySnapshot.forEach((doc) => {
-                const userData = doc.data();
-                const userScore = userData.score;
-                
-                if (userScore > maxScore) {
-                  maxScore = userScore;
-                }
-              });
-              
-              setHighestScore(maxScore); 
-            }
-        }
-        catch(error)
-        {
-            console.error(error.message);
-        }
-   }
-
-    const getNameByEmail = async (email) => {
-        try {
-          const userRef = collection(db, "users");
-          const q = query(userRef, where("email", "==", email)); 
-          const querySnapshot = await getDocs(q);
-    
-          if (!querySnapshot.empty) {
-            const userDoc = querySnapshot.docs[0];
-            const userData = userDoc.data();
-            setName(userData.name); 
-            setYourScore(userData.score);
-          } else {
-            console.log("No user found with this email.");
-            setAuthError("User data not found.");
+  const getMaxScore = async () => {
+    try {
+      const userRef = collection(db, "users");
+      const querySnapshot = await getDocs(userRef);
+      if (!querySnapshot.empty) {
+        let maxScore = 0;
+        querySnapshot.forEach((doc) => {
+          const userData = doc.data();
+          const userScore = userData.score;
+          if (userScore > maxScore) {
+            maxScore = userScore;
           }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-          setAuthError(error.message);
-        }
-      };
-
-      const getChats = async() => {
-        const chatRef = collection(db, "threads");
-        const querySnapshot = await getDocs(chatRef);
-        const docTitles = querySnapshot.docs.map((doc) => doc.id);
-        setChats(docTitles);
-      }
-
-      const getCards = async() => {
-        const cardsRef = collection(db, "cards");
-        const qSnap = await getDocs(cardsRef);
-        const cardTitles = qSnap.docs.map((doc) => doc.id);
-        setCards(cardTitles);
-
-      }
-
-    useEffect(() => {
-        getMaxScore();
-        getCards();
-        getChats();
-        console.log("Component mounted, starting auth check");
-        const timeoutId = setTimeout(() => {
-            if (isLoading) {
-                console.log("Auth check timed out");
-                setAuthError("Authentication check timed out");
-                setIsLoading(false);
-            }
-        }, 1200000); 
-
-        const unsubscribe = auth.onAuthStateChanged((user) => {
-            console.log("Auth state changed:", user ? "User logged in" : "User not logged in");
-            if (user) {
-                console.log("User authenticated, setting loading to false");
-                setIsLoading(false);
-                getNameByEmail(user.email);
-            } else {
-                console.log("User not authenticated, redirecting to signin");
-                router.push('/signin');
-            }
-        }, (error) => {
-            console.error("Auth error:", error);
-            setAuthError(error.message);
-            setIsLoading(false);
         });
-
-        return () => {
-            unsubscribe();
-            clearTimeout(timeoutId);
-        };
-    }, [router]);
-
-    if (isLoading) {
-        return (
-            <Box
-                bgcolor={col1}
-                width={'100vw'}
-                height={'100vh'}
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-            >
-                <CircularProgress
-                    height={'10'}
-                    borderRadius={'10'}
-                    color="success"
-                ></CircularProgress>
-            </Box>
-        ); 
+        setHighestScore(maxScore);
+      }
+    } catch (error) {
+      console.error(error.message);
     }
+  };
 
-    if (authError) {
-        return (
-            <Box
-                bgcolor={col4}
-                width={'100vw'}
-                height={'100vh'}
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-            >
-                <Typography variant="h4">Error: {authError}</Typography>
-            </Box>
-        );
+  const getNameByEmail = async (email) => {
+    try {
+      const userRef = collection(db, "users");
+      const q = query(userRef, where("email", "==", email));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        const userData = userDoc.data();
+        setName(userData.name);
+        setYourScore(userData.score);
+      } else {
+        console.log("No user found with this email.");
+        setAuthError("User data not found.");
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      setAuthError(error.message);
     }
+  };
 
+  const getChats = async () => {
+    const chatRef = collection(db, "threads");
+    const querySnapshot = await getDocs(chatRef);
+    const docTitles = querySnapshot.docs.map((doc) => doc.id);
+    setChats(docTitles);
+  };
 
-        // Redirect section ends
+  const getCards = async () => {
+    const cardsRef = collection(db, "cards");
+    const qSnap = await getDocs(cardsRef);
+    const cardTitles = qSnap.docs.map((doc) => doc.id);
+    setCards(cardTitles);
+  };
 
-        
-    return(
-        <Box
-            width={'100vw'}
-            height={'100vh'}
-            bgcolor={col1}
-            overflow={'hidden'}
-        >
-                    <Box
-                        width='92vw'
-                        height='8vh'
-                        display='flex'
-                        justifyContent='space-between'
-                        alignItems='center'
-                        padding={'0 4vw'}
-                        >
-                            <Typography
-                            color={col4}
-                            margin='0.5em'
-                            fontSize='2em'
-                            >
-                                <Link
-                                    color='inherit'
-                                    underline='none'
-                                    href='./'
-                                >
-                                    Learn Buddy
-                                </Link>
-                            </Typography>
+  useEffect(() => {
+    getMaxScore();
+    getCards();
+    getChats();
 
-                            <Box
-                                display={'flex'}
-                                justifyContent={'space-around'}
-                                width={'30vw'}
-                            >
-                                <Button
-                                    href='./dashboard/'
-                                    
-                                    sx={{color:col4,
-                                        borderBottom:`4px solid ${col4}`,
-                                        '&:hover':{
-                                            color:col1,
-                                            backgroundColor:col4,
-                                                    
-                                        }
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setIsLoading(false);
+        getNameByEmail(user.email);
+      } else {
+        router.push('/signin');
+      }
+    }, (error) => {
+      setAuthError(error.message);
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, [router]);
 
-                                    }}
-                                >
-                                    <HomeIcon display={'block'} />
-                                    
-                                </Button>
-                                <Button
-                                    href='./editor/'
-                                    sx={{color:col2,
-                                        borderBottom:`4px solid ${col2}`,
-                                        '&:hover':{
-                                            color:col1,
-                                            backgroundColor:col2
-                                        }
+  if (isLoading) {
+    return (
+      <Box
+        bgcolor={col4}
+        width="100vw"
+        height="100vh"
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+      >
+        <CircularProgress height="10" borderRadius="10" color="success" />
+      </Box>
+    );
+  }
 
-                                    }}
-                                >
-                                    <CodeIcon />
-                                </Button>
-                                <Button
-                                    href='./chat/'
-                                    sx={{color:col3,
-                                        borderBottom:`4px solid ${col3}`,
-                                        '&:hover':{
-                                            color:col1,
-                                            backgroundColor:col3
-                                        }
+  if (authError) {
+    return (
+      <Box
+        bgcolor={col4}
+        width="100vw"
+        height="100vh"
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+      >
+        <Typography variant="h4">Error: {authError}</Typography>
+      </Box>
+    );
+  }
 
-                                    }}
-                                >
-                                    <SupportAgentIcon />
-                                </Button>
-                                <Button
-                                    href='./fcgen/'
-                                    sx={{color:col5,
-                                        borderBottom:`4px solid ${col5}`,
-                                        '&:hover':{
-                                            color:col1,
-                                            backgroundColor:col5
-                                        }
+  const toggleDrawer = () => {
+    setDrawerOpen(!drawerOpen);
+  };
 
-                                    }}
-                                >
-                                    <BoltIcon />
-                                </Button>
-                            </Box>
-                            
-                            <Box>
-                                <Button
-                                    href="./profile/"
-                                    sx={{color:col4,
-                                        
-                                        '&:hover':{
-                                            color:col1,
-                                            backgroundColor:col4
-                                        }
+  return (
+    <Box bgcolor={col1} sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', overflow: 'hidden' }}>
+      <Grid container spacing={2} sx={{ padding: '2vw' }}>
+        {/* Header */}
+        <Grid item xs={12}>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography color={col4} variant="h4" component={Link} href="./" underline="none">
+              Learn Buddy
+            </Typography>
+            <IconButton onClick={toggleDrawer} sx={{ color: col4, display: { sm: 'none' } }}>
+              <MenuIcon />
+            </IconButton>
+            <Box sx={{ display: { xs: 'none', sm: 'flex' }, gap: 2 }}>
+              {[
+                { href: './dashboard/', icon: <HomeIcon />, color: col4 },
+                { href: './editor/', icon: <CodeIcon />, color: col2 },
+                { href: './chat/', icon: <SupportAgentIcon />, color: col3 },
+                { href: './fcgen/', icon: <BoltIcon />, color: col5 },
+              ].map((item, index) => (
+                <Button key={index} href={item.href} sx={{ color: item.color, borderBottom: `4px solid ${item.color}`, '&:hover': { color: col1, backgroundColor: item.color } }}>
+                  {item.icon}
+                </Button>
+              ))}
+              <Button href="./profile/" sx={{ color: col4, '&:hover': { color: col1, backgroundColor: col4 } }}>
+                <Person4Icon />
+              </Button>
+              <Button onClick={handleLogout} sx={{ color: col4, '&:hover': { color: col1, backgroundColor: col4 } }}>
+                <LogoutIcon />
+              </Button>
+            </Box>
+          </Box>
+        </Grid>
 
-                                    }}
-                                >
-                                    <Person4Icon/>
-                                </Button>
-                                <Button
-                                    href="./profile/"
-                                    onClick={handleLogout}
-                                    sx={{color:col4,
-                                        '&:hover':{
-                                            color:col1,
-                                            backgroundColor:col4
-                                        }
-                                    }}
-                                >
-                                    <LogoutIcon/>
-                                </Button>
-                            </Box>
-                            
-                        </Box>
+        {/* Welcome Card */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Box height="20vh" bgcolor={col4} borderRadius="0.5em" padding="2em" display="flex" flexDirection="column" justifyContent="space-between">
+            <Typography variant="h3" color={col1}>Welcome, {name}!</Typography>
+              
+          </Box>
+        </Grid>
 
-                        {/*//////////////////////////// Navbar ends here /////////////////////////////////*/}
-                        
-                        <Box
-                            height={'46vh'}
-                            width={'100vw'}
-                            display={'flex'}
-                            justifyContent={'center'}
-                            
-                            alignItems={'center'}
-                            flexWrap={'wrap'}
-                            flexDirection={'row'}
-                            boxSizing={'border-box'}
-                        >
-                            {/*///////////// First Box /////////////*/}
-                            <Box
-                                height={'40vh'}
-                                width={'25vw'}
-                                bgcolor={col4}
-                                borderRadius={'0.5em'}
-                                padding={'2em'}
-                                margin={'3vh'}
-                                boxSizing={'border-box'}
-                                display={'flex'}
-                                alignContent={'space-around'}
-                                flexDirection={'column'}
-                                justifyContent={'space-between'}
-                            >
-                                <Typography
-                                    variant="h3"
-                                    color={col1}
-                                >Welcome, {name}!</Typography>
-                                <Box
-                                    display={'flex'}
-                                    justifyContent={'space-between'}
-                                    borderTop={'1px solid rgba(0,0,0,0.3)'}
-                                    padding={'1em'}
-                                >
-                                    <Typography
-                                        width={'100%'}
-                                        textAlign={'center'}
-                                        fontSize={'0.7em'}                                >
-                                        Your Score 
-                                        <Typography
-                                            variant="span"
-                                            padding={'0.2em 0.8em'}
-                                            bgcolor={col3}
-                                            color={col4}
-                                            fontSize={'2.7em'}
-                                            borderRadius={'0.5em'}
-                                            margin={'0 0.2em'}
-                                        >
-                                            {yourScore}
-                                        </Typography>
-                                    </Typography>
-                                    
+        {/* Discussion Threads */}
+        <Grid item xs={12} md={9}>
+          <Box height="45vh" bgcolor={col6} borderRadius="0.5em" overflow="hidden">
+            <Box height="8vh" borderBottom={`1px solid ${col1}`} display="flex" alignItems="center" justifyContent="space-between" px={2}>
+              <Typography color={col4}><SupportAgentIcon /> Discussion Threads</Typography>
+              <IconButton onClick={() => router.push('/chat')} sx={{ color: col4 }}>
+                <AddIcon />
+              </IconButton>
+            </Box>
+            <Box display="flex" flexWrap="wrap" gap={1} p={1} sx={{overflowY: 'auto' }}>
+              {chats.map(chat => (
+                <Link key={chat} href={`./chats/${chat}`} underline="none">
+                  <Typography color={col4} bgcolor={col1} padding="0.5em 1em" borderRadius={2} sx={{ '&:hover': { bgcolor: col4, color: col1 } }}>
+                    {chat}
+                  </Typography>
+                </Link>
+              ))}
+            </Box>
+          </Box>
+        </Grid>
 
-                                    <Typography
-                                        width={'100%'}
-                                        textAlign={'center'}
-                                        fontSize={'0.7em'}                                >
-                                        High Score 
-                                        <Typography
-                                            variant="span"
-                                            padding={'0.2em 0.8em'}
-                                            fontSize={'2.7em'}
-                                            bgcolor={col2}
-                                            color={col4}
-                                            borderRadius={'0.5em'}
-                                            margin={'0 0.2em'}
-                                        >
-                                            {highestScore}
-                                        </Typography>
-                                    </Typography>
-                                </Box>
-                                
-                            </Box>
-                            {/*///////////// Second Box /////////////*/}
-                            <Box
-                                height={'40vh'}
-                                width={'55vw'}
-                                bgcolor={col6}
-                                borderRadius={'0.5em'}
-                            >
-                                <Box
-                                    height={'8vh'}
-                                    width={'100%'}
-                                    borderBottom={"1px solid "+ col1}
-                                    display={'flex'}
-                                    alignItems={'center'}
-                                    justifyContent={'center'}
-                                >
-                                    <Typography
-                                        color={col4}
-                                    >
-                                        <SupportAgentIcon/> Discussion Threads
-                                    </Typography>
-                                </Box>
+        {/* DSA Problems */}
+        <Grid item xs={12} md={6}>
+          <Box height="50vh" bgcolor={col6} borderRadius="0.5em" overflow="hidden">
+            <Box height="12vh" borderBottom={`1px solid ${col1}`} display="flex" alignItems="center" justifyContent="center">
+              <Typography color={col4}><CodeIcon /> DSA problems</Typography>
+            </Box>
+            <Box height="35vh" overflow="auto">
+              {questions.questions.map(question => (
+                <Link key={question.id} href={`./editor/${question.id}`} underline="none">
+                  <Box color={col4} height="5vh" borderBottom={`1px solid ${col1}`} display="flex" alignItems="center" justifyContent="space-between" sx={{'&:hover':{ bgcolor:col4, color:col1 }}} px={2}>
+                    <Typography>{question.shortTitle}</Typography>
+                    <DifficultyIcon difficulty={question.difficulty} col2={col2} col3={col3} col5={col5} />
+                  </Box>
+                </Link>
+              ))}
+            </Box>
+          </Box>
+        </Grid>
 
-                                {/*////////////////////// the saved chats here /////////////////////////////*/}
-                                <Box
-                                    display={'flex'}
-                                    margin={1}
-                                    gap={1}
-                                    overflow={'auto'}
-                                    flexWrap={'wrap'}
-                                >
-                                    {chats.map((chat) =>(
-                                    <Link
-                                        underline="none"
-                                        href={`./chats/${chat}`}
-                                    >
-                                        <Typography
-                                        key={chat}
-                                        color={col4}
-                                        bgcolor={col1}
-                                        padding={'0.5em 1em'}
-                                        borderRadius={2}
-                                        sx={{
-                                            '&:hover':
-                                            {
-                                                bgcolor:col4,
-                                                color:col1
-                                            }
-                                        }}
-                                        
-                                    >
-                                        {chat}
-                                    </Typography>
-                                    </Link>
-                                    
-                                    ))}
-                                </Box>
-                                
+        {/* Flashcards */}
+        <Grid item xs={12} md={6}>
+          <Box height="50vh" bgcolor={col6} borderRadius="0.5em" overflow="hidden">
+            <Box height="8vh" borderBottom={`1px solid ${col1}`} display="flex" alignItems="center" justifyContent="space-between" px={2}>
+              <Typography color={col4}><BoltIcon /> Flashcards</Typography>
+              <IconButton onClick={() => router.push('/fcgen')} sx={{ color: col4 }}>
+                <AddIcon />
+              </IconButton>
+            </Box>
+            <Box display="flex" flexWrap="wrap" gap={1} p={1} sx={{ height: 'calc(100% - 8vh)', overflowY: 'auto' }}>
+              {cards.map(card => (
+                <Link key={card} href={`./flashcards/${card}`} underline="none">
+                  <Typography color={col4} bgcolor={col1} width="5em" height="6em" padding="1em" borderRadius={2} textAlign="center" display="flex" flexDirection="column" alignItems="center" justifyContent="center" sx={{ '&:hover': { bgcolor: col4, color: col1 } }}>
+                    <BoltIcon sx={{ color: col5, marginBottom: '0.5em' }} />
+                    {card}
+                  </Typography>
+                </Link>
+              ))}
+            </Box>
+          </Box>
+        </Grid>
+      </Grid>
 
+      {/* Drawer for mobile */}
+      <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer} sx={{ '& .MuiDrawer-paper': { bgcolor: col1, color: col4 } }}>
+        <List>
+          {[
+            { text: 'Dashboard', icon: <HomeIcon />, href: './dashboard/' },
+            { text: 'Editor', icon: <CodeIcon />, href: './editor/' },
+            { text: 'Chat', icon: <SupportAgentIcon />, href: './chat/' },
+            { text: 'Flashcards', icon: <BoltIcon />, href: './fcgen/' },
+          ].map((item, index) => (
+            <ListItem button key={item.text} onClick={() => { router.push(item.href); toggleDrawer(); }}>
+              <ListItemIcon sx={{ color: col4 }}>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.text} />
+            </ListItem>
+          ))}
+          <Divider />
+          <ListItem button onClick={() => { router.push('./profile/'); toggleDrawer(); }}>
+            <ListItemIcon sx={{ color: col4 }}><Person4Icon /></ListItemIcon>
+            <ListItemText primary="Profile" />
+          </ListItem>
+          <ListItem button onClick={handleLogout}>
+            <ListItemIcon sx={{ color: col4 }}><LogoutIcon /></ListItemIcon>
+            <ListItemText primary="Logout" />
+          </ListItem>
+        </List>
+      </Drawer>
+    </Box>
+  );
+};
 
-                            </Box>
-                        </Box>
-                        {/*//////////////////////// Container for 3rd and 4th Box //////////////////////////*/}
-                        <Box
-                            height={'43vh'}
-                            width={'100vw'}
-                            display={'flex'}
-                            justifyContent={'center'}
-                            
-                            alignItems={'center'}
-                            flexWrap={'wrap'}
-                            flexDirection={'row'}
-                            paddingBottom={'3vh'}
-                        >
+const ScoreDisplay = ({ label, score, bgcolor }) => (
+  <Typography textAlign="center" fontSize="0.7em">
+    {label}
+    <Typography variant="span" padding="0.2em 0.8em" bgcolor={bgcolor} color={col4} fontSize="2.7em" borderRadius="0.5em" display="block" mt={1}>
+      {score}
+    </Typography>
+  </Typography>
+);
 
-                            {/*/////////////////////////// Third Box /////////////////////////////////////*/}
-                            
+const DifficultyIcon = ({ difficulty, col2, col3, col5 }) => {
+  const iconProps = {
+    easy: { icon: <MoodIcon />, color: col3 },
+    medium: { icon: <SentimentSatisfiedIcon />, color: col5 },
+    hard: { icon: <MoodBadIcon />, color: col2 },
+  }[difficulty] || {};
 
-                            <Box
-                                height={'43vh'}
-                                width={'40vw'}
-                                bgcolor={col6}
-                                borderRadius={'0.5em'}
-                                margin={'0 3vh'}
-                            >
-                                <Box
-                                    height={'8vh'}
-                                    width={'100%'}
-                                    borderBottom={"1px solid "+ col1}
-                                    display={'flex'}
-                                    alignItems={'center'}
-                                    justifyContent={'center'}
-                                    >
-                                    <Typography
-                                        color={col4}
-                                        
-                                    >
-                                        <CodeIcon/> DSA problems
-                                    </Typography>
-                                </Box>
-
-                                <Box
-                                    height={'35vh'}
-                                    width={'100%'}
-                                    overflow={'auto'}
-                                >
-                                    {questions.questions.map((question) => (
-                                            <Link
-                                                underline="none"
-                                                href={`./editor/${question.id}`}
-                                            >
-                                                <Box
-                                                    key={question.id}
-                                                    color={col4}
-                                                    width={'100%'}
-                                                    height={'5vh'}
-                                                    boxSizing={'border-box'}
-                                                    borderBottom={"1px solid "+ col1}
-                                                    display={'flex'}
-                                                    alignItems={'center'}
-                                                    justifyContent={'space-between'}
-                                                    sx={{'&:hover':{
-                                                        bgcolor:col4,
-                                                        color:col1
-                                                    }}}
-                                                >
-                                                    <Typography
-                                                        marginLeft={'1em'}
-                                                        textAlign={'center'}
-                                                    >{question.shortTitle}</Typography>
-                                                    <Typography
-                                                        marginRight={'1em'}
-                                                        color={question.difficulty === 'easy' ? (
-                                                            col3
-                                                        ) : question.difficulty === 'medium' ? (
-                                                            col5
-                                                        ) : question.difficulty === 'hard' ? (
-                                                            col2
-                                                        ) : null}
-                                                    >
-                                                        
-                                                        {question.difficulty === 'easy' ? (
-                                                            <MoodIcon />
-                                                        ) : question.difficulty === 'medium' ? (
-                                                            <SentimentSatisfiedIcon />
-                                                        ) : question.difficulty === 'hard' ? (
-                                                            <MoodBadIcon />
-                                                        ) : null}
-                                                        
-                                                    </Typography>
-                                                </Box>
-                                            </Link>
-                                    ))}
-                                </Box>
-
-                            </Box>
-                            {/*/////////////////////////// Fourth Box //////////////////////////////////*/}
-                            <Box
-                                height={'43vh'}
-                                width={'40vw'}
-                                bgcolor={col6}
-                                borderRadius={'0.5em'}
-                            >
-                                <Box
-                                    height={'8vh'}
-                                    width={'100%'}
-                                    borderBottom={"1px solid "+ col1}
-                                    display={'flex'}
-                                    alignItems={'center'}
-                                    justifyContent={'center'}
-                                    >
-                                    <Typography
-                                        color={col4}
-                                    >
-                                        <BoltIcon/> Flashcards
-                                    </Typography>
-                                </Box>
-                                
-                                <Box
-                                    display={'flex'}
-                                    height={'32vh'}
-                                    margin={1}
-                                    gap={1}
-                                    overflow={'auto'}
-                                    flexWrap={'wrap'}
-                                    
-                                >
-                                    {cards.map((card) =>(
-                                    <Link
-                                        underline="none"
-                                        href={`./flashcards/${card}`}
-                                    >
-                                        <Typography
-                                        key={card}
-                                        color={col4}
-                                        bgcolor={col1}
-                                        minWidth={'3em'}
-                                        maxWidth={'5em'}
-                                        minHeight={'6em'}
-                                        padding={'1em 1em'}
-                                        borderRadius={2}
-                                        textAlign={'center'}
-                                        sx={{
-                                            '&:hover':
-                                            {
-                                                bgcolor:col4,
-                                                color:col1
-                                            }
-                                        }}
-                                        
-                                    >
-                                        <Typography
-                                            variant="span"
-                                            display={'inline-block'}
-                                            width={'100%'}
-                                            color={col5}
-                                        >
-                                            <BoltIcon />
-                                        </Typography>
-                                        
-                                        {card}
-                                    </Typography>
-                                    </Link>
-                                    
-                                    ))}
-                                </Box>
-
-                            </Box>
-                        </Box>
-                        
-        </Box>
-    )
-}
+  return <Typography color={iconProps.color}>{iconProps.icon}</Typography>;
+};
