@@ -160,7 +160,7 @@ export default function Home() {
         {/* Header */}
         <Grid item xs={12}>
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography color={col4} variant="h4" component={Link} href="./" underline="none">
+            <Typography color={col4} variant="h5" component={Link} href="./" underline="none">
               Learn Buddy
             </Typography>
             <IconButton onClick={toggleDrawer} sx={{ color: col4, display: { sm: 'none' } }}>
