@@ -199,7 +199,6 @@ export default function Home() {
                             </Typography>
                         </Stack>
                     </Box>
-
                     <Box sx={{ bgcolor: col2, p: 2, borderRadius: '10px' }}>
                         <Stack direction="row" alignItems="center" spacing={1}>
                             <EmojiEventsIcon sx={{ color: col4 }} />
@@ -210,7 +209,6 @@ export default function Home() {
                     </Box>
           </Box>
         </Grid>
-
         {/* Discussion Threads */}
         <Grid item xs={12} md={9}>
           <Box height="45vh" bgcolor={col6} borderRadius="0.5em" overflow="hidden">
@@ -231,7 +229,6 @@ export default function Home() {
             </Box>
           </Box>
         </Grid>
-
         {/* DSA Problems */}
         <Grid item xs={12} md={6}>
           <Box height="50vh" bgcolor={col6} borderRadius="0.5em" overflow="hidden">
@@ -250,7 +247,6 @@ export default function Home() {
             </Box>
           </Box>
         </Grid>
-
         {/* Flashcards */}
         <Grid item xs={12} md={6}>
           <Box height="50vh" bgcolor={col6} borderRadius="0.5em" overflow="hidden">
@@ -273,7 +269,6 @@ export default function Home() {
           </Box>
         </Grid>
       </Grid>
-
       {/* Drawer for mobile */}
       <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer} sx={{ '& .MuiDrawer-paper': { bgcolor: col1, color: col4 } }}>
         <List>
