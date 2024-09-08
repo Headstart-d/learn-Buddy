@@ -3,9 +3,11 @@
 import { 
   Box, Link, Typography, Button, Grid, 
   IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText,
-  CircularProgress, Divider 
+  CircularProgress, Divider, Stack 
 } from '@mui/material';
 import questions from '../editor/questions.json';
+import StarIcon from "@mui/icons-material/Star";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
 import HomeIcon from '@mui/icons-material/Home';
 import CodeIcon from '@mui/icons-material/Code';
@@ -187,9 +189,25 @@ export default function Home() {
 
         {/* Welcome Card */}
         <Grid item xs={12} sm={6} md={3}>
-          <Box height="20vh" bgcolor={col4} borderRadius="0.5em" padding="2em" display="flex" flexDirection="column" justifyContent="space-between">
+          <Box height="35vh" bgcolor={col4} borderRadius="0.5em" padding="2em" display="flex" flexDirection="column" justifyContent="space-between">
             <Typography variant="h3" color={col1}>Welcome, {name}!</Typography>
-              
+            <Box sx={{ bgcolor: col2, p: 2, borderRadius: '10px' }}>
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                            <StarIcon sx={{ color: col4 }} />
+                            <Typography variant="h6" sx={{ color: col4 }}>
+                                Core Score: {yourScore}
+                            </Typography>
+                        </Stack>
+                    </Box>
+
+                    <Box sx={{ bgcolor: col2, p: 2, borderRadius: '10px' }}>
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                            <EmojiEventsIcon sx={{ color: col4 }} />
+                            <Typography variant="h6" sx={{ color: col4 }}>
+                                High Score: {highestScore}
+                            </Typography>
+                        </Stack>
+                    </Box>
           </Box>
         </Grid>
 
